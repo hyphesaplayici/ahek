@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HYP Katsayı Hesaplama</title>
+<style>
+:root{--bg:#f0f2f5;--panel:#ffffff;--border:#d8dee6;--nav:#1a3a5c;--text:#1a2433;--muted:#6b7a8d;--light:#f7f9fc;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
+.navbar{background:var(--nav);padding:0 24px;height:56px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 6px rgba(0,0,0,0.25);}
+.navbar-brand{display:flex;align-items:center;gap:10px;color:#fff;font-size:17px;font-weight:700;}
+.navbar-sub{font-size:11px;font-weight:400;opacity:.7;}
+.navbar-btn{height:32px;padding:0 16px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;}
+.navbar-btn:hover{background:rgba(255,255,255,0.25);}
+.menu-wrap{position:relative;}
+.menu-dropdown{display:none;position:absolute;right:0;top:40px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:190px;z-index:500;overflow:hidden;}
+.menu-dropdown.open{display:block;}
+.menu-item{display:block;width:100%;padding:11px 16px;background:none;border:none;text-align:left;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:background .15s;}
+.menu-item:hover{background:#f0f6ff;color:#1565c0;}
+.menu-divider{height:1px;background:var(--border);}
+.page{max-width:1200px;margin:0 auto;padding:24px 60px 60px;}
+.section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border);}
+.paste-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.paste-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.paste-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.upload-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.06em;}
+.badge-hyp{background:#1565c0;color:#fff;}.badge-sina{background:#e65100;color:#fff;}
+.paste-lbl{font-size:13px;font-weight:700;color:var(--text);}
+.paste-sub{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5;}
+.paste-area{width:100%;height:128px;padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:'Consolas','Courier New',monospace;resize:none;outline:none;color:var(--text);background:#fafbfc;transition:border-color .15s;line-height:1.45;}
+.paste-area:focus{border-color:#1565c0;background:#fff;}
+.paste-info{font-size:12px;margin-top:6px;min-height:18px;font-weight:600;}
+.paste-info.ok{color:#2e7d32;}.paste-info.err{color:#c62828;}
+.settings-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;margin-bottom:20px;align-items:end;}
+.field-lbl{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+.field-inp,.field-sel{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .15s;}
+.field-inp:focus,.field-sel:focus{border-color:#1565c0;}
+.btn-analyze{height:40px;padding:0 28px;background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(21,101,192,.35);transition:opacity .2s;white-space:nowrap;}
+.btn-analyze:hover{opacity:.9;}
+.status-bar{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:10px 16px;font-size:13px;min-height:40px;margin-bottom:20px;color:var(--muted);display:flex;align-items:center;gap:8px;}
+.status-bar.ok{border-color:#a5d6a7;background:#f1f8f1;color:#2e7d32;}
+.status-bar.err{border-color:#ef9a9a;background:#fff5f5;color:#c62828;}
+#resultsWrap{display:none;}
+.result-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
+.rcard{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.rcard-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+.rcard-val{font-size:28px;font-weight:800;letter-spacing:-.01em;}
+.rcard-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.rcard.final{border-color:#1565c0;border-width:2px;background:#f0f6ff;}
+.rcard.final .rcard-val{color:#1565c0;font-size:34px;}
+.toggle-wrap{display:flex;align-items:center;gap:7px;margin-top:6px;}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;border-radius:20px;background:#e0e0e0;cursor:pointer;transition:background .2s;}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;border-radius:50%;background:#fff;transition:transform .2s;}
+.toggle input:checked+.toggle-slider{background:#2e7d32;}
+.toggle input:checked+.toggle-slider::before{transform:translateX(16px);}
+.toggle-lbl{font-size:11px;font-weight:700;}
+.tbl-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.tbl-toolbar{background:var(--light);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;}
+.tbl-title{font-size:13px;font-weight:700;color:var(--text);}
+.tbl-hint{font-size:12px;color:var(--muted);}
+table{width:100%;border-collapse:separate;border-spacing:0 3px;}
+thead th{background:var(--nav);color:#fff;font-size:13px;font-weight:600;padding:11px 16px;text-align:left;white-space:nowrap;}
+thead th:first-child{width:185px;padding-left:20px;}
+tbody tr:hover{filter:brightness(.97);}
+tbody td{padding:10px 16px;vertical-align:middle;font-size:14px;}
+tbody td:first-child{padding-left:16px;position:relative;}
+tbody td:first-child::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:8px;border-radius:2px;}
+tbody td:last-child{position:relative;padding-right:20px;}
+tbody td:last-child::after{content:'';position:absolute;right:0;top:2px;bottom:2px;width:8px;border-radius:2px;}
+tr.grp-ht,tr.grp-dm,tr.grp-obz,tr.grp-kvr,tr.grp-kanser,tr.grp-yasli,tr.grp-surec{background:#f8f9fb;}
+tr.grp-ht td:first-child::before,tr.grp-ht td:last-child::after{background:#1565c0;}
+tr.grp-dm td:first-child::before,tr.grp-dm td:last-child::after{background:#2e7d32;}
+tr.grp-obz td:first-child::before,tr.grp-obz td:last-child::after{background:#00695c;}
+tr.grp-kvr td:first-child::before,tr.grp-kvr td:last-child::after{background:#7b1fa2;}
+tr.grp-kanser td:first-child::before,tr.grp-kanser td:last-child::after{background:#c84b00;}
+tr.grp-yasli td:first-child::before,tr.grp-yasli td:last-child::after{background:#4527a0;}
+tr.grp-surec td:first-child::before,tr.grp-surec td:last-child::after{background:#0277bd;}
+.kname{font-size:15px;font-weight:600;}
+.kname.ht{color:#1565c0;}.kname.dm{color:#2e7d32;}.kname.obz{color:#00695c;}
+.kname.kvr{color:#7b1fa2;}.kname.kanser{color:#c84b00;}.kname.yasli{color:#4527a0;}.kname.surec{color:#0277bd;}
+.edt{width:72px;height:36px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:14px;text-align:center;outline:none;transition:border-color .15s;}
+.edt:focus{border-color:#1565c0;}.edt.auto{color:#1565c0;font-weight:600;}
+.inp-wrap{display:inline-flex;align-items:center;gap:6px;position:relative;}
+.inp-wrap .edt{padding-right:22px;}
+.steppers{position:absolute;right:3px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:1px;opacity:0;pointer-events:none;transition:opacity .15s;}
+td:hover .steppers,.inp-wrap:focus-within .steppers{opacity:1;pointer-events:auto;}
+.step-btn{width:16px;height:13px;background:rgba(21,101,192,0.12);border:none;border-radius:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;color:#1565c0;user-select:none;transition:background .1s;}
+.step-btn:hover{background:rgba(21,101,192,0.28);}
+.pct-badge{display:inline-block;min-width:70px;padding:4px 12px;border-radius:6px;font-size:14px;font-weight:700;text-align:center;}
+.pct-red{background:#ffeaea;color:#b71c1c;border:1px solid #ffcdd2;}
+.pct-yel{background:#fff8e8;color:#bf6000;border:1px solid #ffe0b2;}
+.pct-grn{background:#eafaf0;color:#1b5e20;border:1px solid #c8e6c9;}
+.pct-none{background:#f5f5f5;color:#9e9e9e;border:1px solid #e0e0e0;}
+.bk-val{font-size:14px;font-weight:600;}
+.bk-bad{color:#b71c1c;}.bk-ok{color:#1b5e20;}.bk-mid{color:var(--text);}
+.devir-tag{display:inline-block;white-space:nowrap;font-size:11px;background:#e3f0ff;color:#1565c0;border:1px solid #bbdefb;border-radius:4px;padding:2px 7px;margin-left:6px;font-weight:600;vertical-align:middle;}
+.bottom-row{display:flex;gap:10px;padding:12px 18px;border-top:1px solid var(--border);background:var(--light);}
+.btn-sec{height:36px;padding:0 18px;border:1px solid var(--border);background:var(--panel);border-radius:7px;font-size:13px;cursor:pointer;color:var(--text);transition:border-color .15s;}
+.btn-sec:hover{border-color:#1565c0;color:#1565c0;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;text-align:center;color:var(--muted);gap:12px;}
+.empty-state-icon{font-size:48px;opacity:.35;}.empty-state-txt{font-size:15px;}
+.devir-info{background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:#1565c0;display:none;}
+.popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;}
+.popup-overlay.open{display:flex;}
+.popup-box{background:#fff;border-radius:12px;padding:28px;max-width:640px;width:94%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:84vh;overflow-y:auto;}
+.popup-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:24px;cursor:pointer;color:#666;line-height:1;padding:0 4px;}
+.popup-title{font-size:16px;font-weight:700;color:var(--nav);margin-bottom:16px;}
+.popup-video{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;}
+.popup-video iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none;}
+.popup-body{font-size:13px;line-height:1.9;color:var(--text);}
+.popup-body p{margin-bottom:8px;}
+.popup-body strong{color:var(--nav);}
+.popup-body ul{padding-left:20px;margin-bottom:8px;}
+.ad-sidebar{position:fixed;top:80px;width:160px;background:#f9f9f9;border:1px dashed #bbb;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;text-align:center;padding:8px;}
+.ad-left{left:8px;height:600px;}.ad-right{right:8px;height:600px;}
+.ad-footer{width:100%;max-width:728px;height:90px;margin:24px auto 0;background:#f9f9f9;border:1px dashed #bbb;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;}
+@media(max-width:1400px){.ad-sidebar{display:none;}}
+@media(max-width:900px){.paste-row{grid-template-columns:1fr;}.result-cards{grid-template-columns:1fr 1fr;}.settings-row{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div class="navbar-brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <circle cx="14" cy="14" r="13" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
+      <path d="M9 14h3l2-5 2 10 2-5h3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div>HYP Katsayı Hesaplama</div>
+      <div class="navbar-sub">Hastalık Yönetim Platformu · Tarama ve Takip Katsayısı</div>
+    </div>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <button class="navbar-btn" id="btn-guide">📖 Kullanım Kılavuzu</button>
+    <div class="menu-wrap">
+      <button class="navbar-btn" id="btn-menu">☰ Menü</button>
+      <div class="menu-dropdown" id="main-menu">
+        <button class="menu-item" id="menu-iletisim">✉ İletişim</button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="menu-hyp-nedir">❓ HYP Nedir?</button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="menu-mevzuat">📄 HYP Mevzuatı</button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="menu-gizlilik">🔒 Gizlilik Politikası</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POPUPLAR -->
+<div class="popup-overlay" id="popup-guide">
+  <div class="popup-box">
+    <button class="popup-close" data-close="popup-guide">×</button>
+    <div class="popup-title">📖 Kullanım Kılavuzu</div>
+    <div class="popup-video">
+      <iframe src="https://www.youtube.com/embed/7JC0ipgwvYI?si=KYmgPH98-uxKNZpo" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popup-iletisim">
+  <div class="popup-box">
+    <button class="popup-close" data-close="popup-iletisim">×</button>
+    <div class="popup-title">✉ İletişim</div>
+    <div class="popup-body">
+      <p>Hata bildirimi, öneri, reklam ve görüşleriniz için bize ulaşabilirsiniz:</p>
+      <p>📧 <a href="mailto:hyphesaplayici@gmail.com" style="color:#1565c0;font-weight:600;">hyphesaplayici@gmail.com</a></p>
+      <p style="color:var(--muted);font-size:12px;">En kısa sürede dönüş yapılacaktır.</p>
+    </div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popup-hyp-nedir">
+  <div class="popup-box">
+    <button class="popup-close" data-close="popup-hyp-nedir">×</button>
+    <div class="popup-title">❓ Hastalık Yönetim Platformu (HYP) Nedir?</div>
+    <div class="popup-body">
+      <p>Hastalık Yönetim Platformu (HYP), birinci basamakta kronik hastalıkların erken taranması, düzenli izlenmesi ve gerektiğinde uygun birimlere yönlendirilmesi için geliştirilmiş bir sistemdir. HYP kapsamında hipertansiyon, diyabet, obezite, kanser taramaları, kardiyovasküler risk değerlendirmesi ve yaşlı sağlığına yönelik izlem süreçleri yer alır.</p>
+      <p><strong>Hangi durumlar takip edilir?</strong></p>
+      <p>Kılavuza göre hipertansiyon taraması 18 yaş ve üzeri bireylerde, diyabet taraması 40 yaş ve üzeri bireylerde, obezite taraması ise 18 yaş ve üzeri bireylerde yürütülür. Ayrıca 40 yaş ve üzeri kişilerde kardiyovasküler risk değerlendirmesi yapılır; 65 yaş ve üzerindeki bireyler için çok yönlü yaşlı değerlendirmesi planlanır. Tarama ve izlem sıklığı, kişinin yaşına ve risk durumuna göre değişebilir.</p>
+      <p><strong>Kanser taramaları</strong></p>
+      <p>Ulusal tarama programında meme kanseri için 40–69 yaş arası kadınlara 2 yılda bir mamografi, serviks kanseri için 30–65 yaş arası kadınlara 5 yılda bir HPV-DNA testi, kolorektal kanser için 50–70 yaş arası kadın ve erkeklere 2 yılda bir gaitada gizli kan testi önerilir. Bu taramalar erken tanı ve uygun merkezlere yönlendirme amacı taşır.</p>
+      <p><strong>Bu hesaplayıcı ne yapar?</strong></p>
+      <p>Bu araç, HYP'ye uygun şekilde tarama ve izlem süreçlerini pratikleştirmek için hazırlanmıştır. Hesaplama ve kayıt kolaylığı sağlar; ancak tanı, tedavi veya hekim değerlendirmesinin yerini almaz.</p>
+    </div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popup-gizlilik">
+  <div class="popup-box">
+    <button class="popup-close" data-close="popup-gizlilik">×</button>
+    <div class="popup-title">🔒 Gizlilik Politikası</div>
+    <div class="popup-body">
+      <p>Bu Gizlilik Politikası, bu sitede sunulan hizmetlerin kullanımında geçerli olan veri işleme ve gizlilik esaslarını açıklar.</p>
+      <p><strong>1. Toplanan Bilgiler</strong></p>
+      <p>Sitemiz, kullanıcıların hesaplama işlemlerini kolaylaştırmak için bazı verileri geçici olarak işleyebilir. Kullanıcının kendi isteğiyle kaydettiği bilgiler, yalnızca bu özelliğin çalışması için kullanılır. Sitemiz üzerinden doğrudan kişisel bilgiler talep edilmez; ancak kullanıcı iletişime geçerse, iletilen bilgiler bu amaçla kullanılabilir.</p>
+      <p><strong>2. Kayıt ve Saklama</strong></p>
+      <p>Kaydetme özelliği, kullanıcı tarafından girilen bilgilerin daha sonra tekrar erişilebilmesi için çalışır. Bu bilgiler kullanıcı deneyimini geliştirmek amacıyla saklanır ve kullanıcı tarafından silinebilir.</p>
+      <p><strong>3. Çerezler ve Benzeri Teknolojiler</strong></p>
+      <p>Sitemiz temel çalışma işlevleri için çerezler kullanabilir. Reklam hizmetleri kullanılması halinde bu sağlayıcılar kendi çerez politikalarına göre veri işleyebilir.</p>
+      <p><strong>4. Üçüncü Taraf Hizmetler</strong></p>
+      <p>Sitemiz üçüncü taraf hizmetlerinden yararlanabilir. Bu hizmetlerin kendi gizlilik politikaları olabilir.</p>
+      <p><strong>5. Verilerin Kullanım Amacı</strong></p>
+      <ul><li>Site işlevlerinin çalıştırılması</li><li>Kaydetme özelliğinin sağlanması</li><li>Kullanıcı deneyiminin iyileştirilmesi</li><li>Teknik sorunların giderilmesi</li><li>Gerekirse kullanıcıyla iletişime geçilmesi</li></ul>
+      <p><strong>6. Verilerin Paylaşımı</strong></p>
+      <p>Kullanıcı verileri, yasal zorunluluklar dışında üçüncü kişilerle paylaşılmaz.</p>
+      <p><strong>7. Veri Güvenliği</strong></p>
+      <p>Kullanıcı verilerinin korunması için makul teknik ve idari önlemler alınır.</p>
+      <p><strong>8. Değişiklikler</strong></p>
+      <p>Bu Gizlilik Politikası zaman zaman güncellenebilir. Güncel sürüm her zaman bu sayfada yayımlanır.</p>
+    </div>
+  </div>
+</div>
+
+<!-- REKLAMLAR -->
+<div class="ad-sidebar ad-left">
+  <ins class="adsbygoogle" style="display:inline-block;width:160px;height:600px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"></ins>
+</div>
+<div class="ad-sidebar ad-right">
+  <ins class="adsbygoogle" style="display:inline-block;width:160px;height:600px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"></ins>
+</div>
+
+<!-- SAYFA -->
+<div class="page">
+  <div class="section-title">Veri Yapıştır</div>
+  <div class="paste-row">
+    <div class="paste-card">
+      <div class="paste-header"><span class="upload-badge badge-hyp">HYP</span><span class="paste-lbl">HYP Sistemi</span></div>
+      <div class="paste-sub">HYP takip işlemi istatistikleri verilerini buraya yapıştırın.</div>
+      <textarea id="hyp-text" class="paste-area"></textarea>
+      <div class="paste-info" id="hyp-info"></div>
+    </div>
+    <div class="paste-card">
+      <div class="paste-header"><span class="upload-badge badge-sina">SİNA</span><span class="paste-lbl">SİNA Sistemi</span></div>
+      <div class="paste-sub">Pozitif Performans → Gerçekleşme Tablosu'nu seçip buraya yapıştırın.</div>
+      <textarea id="sina-text" class="paste-area"></textarea>
+      <div class="paste-info" id="sina-info"></div>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div><div class="field-lbl">Toplam Nüfus</div><input class="field-inp" id="nufus" type="number" placeholder="Örn: 2977"></div>
+    <div><div class="field-lbl">Nüfus Tipi</div>
+      <select class="field-sel" id="nufusTip">
+        <option value="normal">Normal (≤4000 tavan)</option>
+        <option value="dusuk">Entegre/Düşük (≤2400 tavan)</option>
+        <option value="sifir">Sıfır Birim (tavan = 1.0)</option>
+      </select>
+    </div>
+    <div><div class="field-lbl">Süreç Yönetimi</div>
+      <select class="field-sel" id="surec">
+        <option value="">— Seçin —</option>
+        <option value="basarili" selected>Başarılı (BK = 1.0300)</option>
+        <option value="basarisiz">Başarısız (BK = 0.9940)</option>
+      </select>
+    </div>
+    <div><div class="field-lbl">&nbsp;</div><button class="btn-analyze" id="btn-analyze">⚡ Hesapla</button></div>
+  </div>
+
+  <div class="status-bar" id="status">Verileri yapıştırın, ardından "Hesapla" butonuna basın.</div>
+
+  <div id="resultsWrap">
+    <div class="section-title">Hesaplama Sonuçları</div>
+    <div class="result-cards">
+      <div class="rcard">
+        <div class="rcard-lbl">KHT Yapılan/Gereken</div>
+        <div id="c-kht" style="font-size:22px;font-weight:800;margin-bottom:4px;">—</div>
+        <div class="toggle-wrap">
+          <label class="toggle"><input type="checkbox" id="kht-toggle" checked><span class="toggle-slider"></span></label>
+          <span class="toggle-lbl" id="kht-toggle-lbl" style="color:#2e7d32;">Devir Dahil</span>
+        </div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-lbl">Başarı Katsayısı</div>
+        <div class="rcard-val" id="c-basari" style="color:#1565c0">—</div>
+        <div class="rcard-sub">Tüm BK çarpımı</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-lbl">Tavan Katsayısı</div>
+        <div class="rcard-val" id="c-tavan" style="color:#555">—</div>
+        <div class="rcard-sub" id="c-tavan-sub">Nüfus girilmedi</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-lbl">Süreç BK</div>
+        <div class="rcard-val" id="c-surec" style="color:#555">—</div>
+        <div class="rcard-sub">Süreç yönetimi katsayısı</div>
+      </div>
+      <div class="rcard final">
+        <div class="rcard-lbl">🏆 Maaş Katsayısı</div>
+        <div class="rcard-val" id="c-final">—</div>
+        <div class="rcard-sub" id="c-final-sub"></div>
+      </div>
+    </div>
+
+    <div class="devir-info" id="devirInfo"></div>
+
+    <div class="tbl-panel">
+      <div class="tbl-toolbar">
+        <div class="tbl-title">Kriter Detayları</div>
+        <div class="tbl-hint">✏ Değerleri düzeltebilirsiniz — otomatik hesaplar</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Kriter</th>
+            <th>Gereken <span style="font-weight:400;opacity:.75">(SİNA)</span></th>
+            <th>Yapılan <span style="font-weight:400;opacity:.75">(HYP)</span></th>
+            <th>Geçen Ay Devir <span style="font-weight:400;opacity:.75">(SİNA)</span></th>
+            <th>% Başarı</th>
+            <th>BK</th>
+            <th style="text-align:center;padding:11px 8px;">%40</th>
+            <th style="text-align:center;padding:11px 4px;">%70</th>
+            <th style="text-align:center;padding:11px 20px 11px 4px;">%90</th>
+          </tr>
+        </thead>
+        <tbody id="kriterBody">
+          <tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-txt">Veri yapıştırıp Hesapla'ya basın</div></div></td></tr>
+        </tbody>
+      </table>
+      <div class="bottom-row">
+        <button class="btn-sec" id="btn-recalc">🔄 Yeniden Hesapla</button>
+        <button class="btn-sec" id="btn-reset">🗑 Temizle</button>
+        <button class="btn-sec" id="btn-save" style="margin-left:auto;background:#1565c0;color:#fff;border-color:#1565c0;font-weight:600;">💾 Kaydet</button>
+        <span id="saveOk" style="display:none;color:#2e7d32;font-size:13px;font-weight:600;align-self:center;">✓ Kaydedildi</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ad-footer">
+    <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"></ins>
+  </div>
+</div>
+
+<script>
+var KRITERLER = [
+  {id:'ht_tarama',fullLbl:'Hipertansiyon Tarama',grp:'ht',cls:'ht',asgari:40,azami:90,floor:0.9940,cap:1.0500,yapSrc:'hyp'},
+  {id:'ht_izlem',fullLbl:'Hipertansiyon İzlem',grp:'ht',cls:'ht',asgari:50,azami:90,floor:0.98871,cap:1.0249,yapSrc:'hyp'},
+  {id:'dm_tarama',fullLbl:'Diyabet Tarama',grp:'dm',cls:'dm',asgari:40,azami:90,floor:0.9940,cap:1.0500,yapSrc:'hyp'},
+  {id:'dm_izlem',fullLbl:'Diyabet İzlem',grp:'dm',cls:'dm',asgari:50,azami:90,floor:0.98871,cap:1.0249,yapSrc:'hyp'},
+  {id:'obezite_tarama',fullLbl:'Obezite Tarama',grp:'obz',cls:'obz',asgari:40,azami:90,floor:0.9940,cap:1.0170,yapSrc:'hyp'},
+  {id:'obezite_izlem',fullLbl:'Obezite İzlem',grp:'obz',cls:'obz',asgari:50,azami:90,floor:0.98871,cap:1.0249,yapSrc:'hyp'},
+  {id:'kvr_tarama',fullLbl:'KVR Tarama',grp:'kvr',cls:'kvr',asgari:40,azami:90,floor:0.9940,cap:1.0500,yapSrc:'hyp'},
+  {id:'kvr_izlem',fullLbl:'KVR İzlem',grp:'kvr',cls:'kvr',asgari:50,azami:90,floor:0.98871,cap:1.0249,yapSrc:'hyp'},
+  {id:'serviks',fullLbl:'Serviks Kanseri',grp:'kanser',cls:'kanser',asgari:50,azami:90,floor:0.9940,cap:1.0300,yapSrc:'sina'},
+  {id:'kolorektal',fullLbl:'Kolorektal Kanser',grp:'kanser',cls:'kanser',asgari:50,azami:90,floor:0.9940,cap:1.0300,yapSrc:'sina'},
+  {id:'mamografi',fullLbl:'Meme Kanseri',grp:'kanser',cls:'kanser',asgari:40,azami:90,floor:0.9940,cap:1.0310,yapSrc:'sina'},
+  {id:'yasli_izlem',fullLbl:'Yaşlı İzlem',grp:'yasli',cls:'yasli',asgari:50,azami:90,floor:0.98871,cap:1.0249,yapSrc:'hyp'},
+];
+var TARAMA_IDS = ['ht_tarama','dm_tarama','obezite_tarama','kvr_tarama'];
+var SAVE_KEY = 'hyp_katsayi_v1';
+
+/* ── POPUP ── */
+function popupOpen(id) {
+  var el = document.getElementById('popup-'+id);
+  if (el) el.classList.add('open');
+}
+function popupClose(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+// Popup kapat butonları — data-close attribute ile
+document.addEventListener('click', function(e) {
+  // Kapat butonu
+  if (e.target && e.target.dataset && e.target.dataset.close) {
+    popupClose(e.target.dataset.close);
+    return;
+  }
+  // Overlay'e tıklama
+  if (e.target && e.target.classList && e.target.classList.contains('popup-overlay')) {
+    e.target.classList.remove('open');
+    return;
+  }
+  // Menü dışına tıklama
+  var menu = document.getElementById('main-menu');
+  var menuBtn = document.getElementById('btn-menu');
+  if (menu && !menu.contains(e.target) && e.target !== menuBtn) {
+    menu.classList.remove('open');
+  }
+});
+
+/* ── NAVBAR BUTONLARI ── */
+document.getElementById('btn-guide').addEventListener('click', function() { popupOpen('guide'); });
+document.getElementById('btn-menu').addEventListener('click', function(e) {
+  e.stopPropagation();
+  document.getElementById('main-menu').classList.toggle('open');
+});
+document.getElementById('menu-iletisim').addEventListener('click', function() {
+  document.getElementById('main-menu').classList.remove('open');
+  popupOpen('iletisim');
+});
+document.getElementById('menu-hyp-nedir').addEventListener('click', function() {
+  document.getElementById('main-menu').classList.remove('open');
+  popupOpen('hyp-nedir');
+});
+document.getElementById('menu-mevzuat').addEventListener('click', function() {
+  document.getElementById('main-menu').classList.remove('open');
+  window.open('https://hyp.saglik.gov.tr/docs/HYP-KullanimKilavuzu.pdf', '_blank');
+});
+document.getElementById('menu-gizlilik').addEventListener('click', function() {
+  document.getElementById('main-menu').classList.remove('open');
+  popupOpen('gizlilik');
+});
+
+/* ── PARSERS ── */
+function parseHYP(text) {
+  var lines = text.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  var res = {}, i = 0;
+  while (i < lines.length) {
+    var t = lines[i].replace(/…/g,'').trim();
+    var next = i+1 < lines.length ? lines[i+1].trim() : '';
+    var num = parseInt(next);
+    if (!isNaN(num) && /^\d+$/.test(next)) {
+      var isHT = ['HİPERTANS','İPERTANS','PERTANS','ERTANS'].some(function(k){return t.includes(k);});
+      if      (isHT && t.includes('TARAMA'))                                          res.ht_tarama = num;
+      else if (isHT)                                                                    res.ht_izlem = num;
+      else if ((t.includes('KARDİYO')||t.includes('KVR')) && t.includes('TARAMA'))    res.kvr_tarama = num;
+      else if (t.includes('KARDİYO')||t.includes('KVR'))                              res.kvr_izlem = num;
+      else if (t.includes('DİYABET') && t.includes('TARAMA'))                         res.dm_tarama = num;
+      else if (t.includes('DİYABET'))                                                  res.dm_izlem = num;
+      else if (t.includes('OBEZİTE') && t.includes('TARAMA'))                         res.obezite_tarama = num;
+      else if (t.includes('OBEZİTE'))                                                  res.obezite_izlem = num;
+      else if (t.includes('YAŞLI'))                                                    res.yasli_izlem = num;
+      i += 2;
+    } else { i++; }
+  }
+  return res;
+}
+
+function parseSINA(text) {
+  var norm = text.replace(/\r\n/g,'\n').replace(/\t/g,' ');
+  var diseaseRe = /HİPERTANS|DİYABET|OBEZİTE|KVR|KANSER|YAŞLI|KARDİYO/i;
+  var segs, lines = norm.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>3;});
+  if (lines.filter(function(l){return diseaseRe.test(l);}).length >= 2) {
+    segs = lines;
+  } else {
+    var flat = norm.replace(/\n/g,' ');
+    segs = flat.split(/(?=HİPERTANS|DİYABET|OBEZİTE|\bKVR\b|KANSER|YAŞLI)/i).map(function(s){return s.trim();}).filter(function(s){return s.length>3;});
+  }
+  var res = {};
+  segs.forEach(function(seg) {
+    var s = seg, ei = s.indexOf('…');
+    if (ei >= 0) s = s.slice(ei+1).trim();
+    var field = sinaField(s.toUpperCase());
+    if (!field) return;
+    var nums = sinaInts(s);
+    if (nums.length < 3) return;
+    res[field+'_gereken'] = nums[0];
+    res[field+'_yapilan'] = nums[1];
+    res[field+'_devir']   = nums[2];
+  });
+  return res;
+}
+
+function sinaInts(text) {
+  return (text.replace(/%\s*\d+[,.]\d*/g,'').replace(/%/g,'').match(/\b\d+\b/g)||[]).map(Number);
+}
+
+function sinaField(up) {
+  var prefix = null;
+  if      (up.includes('HİPERTANS')) prefix = 'ht';
+  else if (up.includes('DİYABET'))   prefix = 'dm';
+  else if (up.includes('OBEZİTE'))   prefix = 'obezite';
+  else if (/\bKVR\b/.test(up)||up.includes('KARDİYO')) prefix = 'kvr';
+  else if (up.includes('KANSER')) {
+    if (up.includes('KOLOREKT'))                         return 'kolorektal';
+    if (up.includes('MAMOGRA'))                          return 'mamografi';
+    if (up.includes('SERVİKS')||up.includes('SERVIKS'))  return 'serviks';
+    return null;
+  }
+  else if (up.includes('YAŞLI')||up.includes('YASLI')) return 'yasli_izlem';
+  if (!prefix) return null;
+  var kw = prefix==='kvr'?(up.includes('KARDİYO')?'KARDİYO':'KVR'):
+           prefix==='ht'?'HİPERTANS':prefix==='dm'?'DİYABET':'OBEZİTE';
+  var after = up.slice(up.indexOf(kw)+kw.length).replace(/^\S+/,'').trimStart();
+  var first = after.charAt(0);
+  if (first==='T') return prefix+'_tarama';
+  if (first==='İ'||first==='I') return prefix+'_izlem';
+  if (/TARAMA/.test(up)) return prefix+'_tarama';
+  if (/İZLEM|IZLEM/.test(up)) return prefix+'_izlem';
+  return null;
+}
+
+/* ── HESAPLAMA ── */
+function calcBK(pct, k) {
+  if (pct===null) return null;
+  if (pct < k.asgari) return +k.floor.toFixed(5);
+  if (pct >= k.azami) return +k.cap.toFixed(5);
+  return +(1.0+((pct-k.asgari)/(k.azami-k.asgari))*(k.cap-1.0)).toFixed(5);
+}
+function calcSurecBK(v) { return v==='basarili'?1.0300:v==='basarisiz'?0.9940:null; }
+function calcEffective(gereken, yapilan, devir) {
+  if (!gereken) return {pct:null,devirUsed:false};
+  if (yapilan===null||isNaN(yapilan)) return {pct:null,devirUsed:false};
+  if (devir&&devir>0&&yapilan>=gereken*0.10)
+    return {pct:+((yapilan+devir)/gereken*100).toFixed(1),devirUsed:true};
+  return {pct:+(yapilan/gereken*100).toFixed(1),devirUsed:false};
+}
+function thrCell(g, y, d, thr) {
+  var gv=parseFloat(g), yv=parseFloat(y)||0, dv=parseFloat(d)||0;
+  if (isNaN(gv)||gv<=0) return '<span style="color:#bbb">—</span>';
+  var fark = Math.max(0, Math.ceil(gv*thr/100 - (yv+dv)));
+  if (fark===0) return '<span style="color:#1b5e20;font-size:14px;font-weight:700;">✓</span>';
+  return '<span style="color:#c84b00;font-size:14px;font-weight:600;">+'+fark+'</span>';
+}
+
+/* ── RENDER ── */
+function si(field, val, cls, ph) {
+  return '<div class="inp-wrap"><input class="edt '+(cls||'')+'" data-f="'+field+'" value="'+(val!=null?val:'')+'" placeholder="'+(ph||'—')+'" oninput="recalculate()"><div class="steppers"><button class="step-btn" onmousedown="stepInp(this,1)" type="button">&#9650;</button><button class="step-btn" onmousedown="stepInp(this,-1)" type="button">&#9660;</button></div></div>';
+}
+function stepInp(btn, delta) {
+  var inp = btn.closest('.inp-wrap').querySelector('input');
+  var cur = parseFloat(inp.value);
+  inp.value = isNaN(cur) ? Math.max(0,delta) : Math.max(0,cur+delta);
+  inp.dispatchEvent(new Event('input'));
+}
+
+function renderTable(results) {
+  document.getElementById('resultsWrap').style.display = 'block';
+  var hyp=(results&&results.hyp)||{}, sina=(results&&results.sina)||{};
+  var tbody = document.getElementById('kriterBody');
+  tbody.innerHTML = '';
+  KRITERLER.forEach(function(k) {
+    var gereken = sina[k.id+'_gereken']!=null?sina[k.id+'_gereken']:null;
+    var yapilan = k.yapSrc==='hyp'?(hyp[k.id]!=null?hyp[k.id]:null):(sina[k.id+'_yapilan']!=null?sina[k.id+'_yapilan']:null);
+    var devir   = sina[k.id+'_devir']!=null?sina[k.id+'_devir']:null;
+    var eff = calcEffective(gereken, yapilan, devir);
+    var bk = calcBK(eff.pct, k);
+    var tr = document.createElement('tr');
+    tr.className='grp-'+k.grp; tr.dataset.id=k.id;
+    var pC=eff.pct===null?'pct-none':eff.pct>=k.azami?'pct-grn':eff.pct>=k.asgari?'pct-yel':'pct-red';
+    var bC=bk===null?'':bk<1.0?'bk-bad':bk>1.0?'bk-ok':'bk-mid';
+    var g=gereken!=null?gereken:'', yp=yapilan!=null?yapilan:'', dv=devir!=null?devir:'';
+    var s4070 = TARAMA_IDS.indexOf(k.id)>=0;
+    tr.innerHTML=
+      '<td><span class="kname '+k.cls+'">'+k.fullLbl+'</span></td>'
+      +'<td>'+si('gereken',g,'auto')+'</td>'
+      +'<td>'+si('yapilan',yp,k.yapSrc==='hyp'?'auto':'')+'</td>'
+      +'<td>'+si('devir',dv,'auto','0')+'</td>'
+      +'<td><span class="pct-badge '+pC+'">'+(eff.pct!==null?eff.pct+'%':'—')+'</span></td>'
+      +'<td><span class="bk-val '+bC+'">'+(bk!==null?bk.toFixed(5):'—')+'</span></td>'
+      +'<td style="text-align:center;padding:10px 8px">'+(s4070?thrCell(g,yp,dv,40):'')+'</td>'
+      +'<td style="text-align:center;padding:10px 4px">'+(s4070?thrCell(g,yp,dv,70):'')+'</td>'
+      +'<td style="text-align:center;padding:10px 20px 10px 4px">'+thrCell(g,yp,dv,90)+'</td>';
+    tbody.appendChild(tr);
+  });
+  var sr=document.createElement('tr'); sr.dataset.id='surec'; sr.className='grp-surec';
+  sr.innerHTML='<td><span class="kname surec">Süreç Yönetimi</span></td><td colspan="3" style="color:var(--muted);font-size:13px;">Yukarıdaki dropdown\'dan seçin →</td><td>—</td><td class="bk-val" id="surec-bk">—</td><td id="surec-durum">—</td><td></td><td></td>';
+  tbody.appendChild(sr);
+}
+
+/* ── ANALYZE ── */
+function analyze() {
+  var hypText=document.getElementById('hyp-text').value.trim();
+  var sinaText=document.getElementById('sina-text').value.trim();
+  if (!hypText&&!sinaText){setStatus('⚠ En az bir alana veri yapıştırın','err');return;}
+  var results={};
+  if (hypText) {
+    var hyp=parseHYP(hypText); results.hyp=hyp;
+    var cnt=Object.keys(hyp).length;
+    var el=document.getElementById('hyp-info');
+    el.textContent=cnt>0?'✓ '+cnt+' kriter okundu':'⚠ Kriter okunamadı';
+    el.className='paste-info '+(cnt>0?'ok':'err');
+  }
+  if (sinaText) {
+    var sina=parseSINA(sinaText); results.sina=sina;
+    var cnt2=Math.round(Object.keys(sina).length/3);
+    var el2=document.getElementById('sina-info');
+    el2.textContent=cnt2>0?'✓ '+cnt2+' kriter okundu':'⚠ Kriter okunamadı';
+    el2.className='paste-info '+(cnt2>0?'ok':'err');
+  }
+  setStatus('✓ Veriler işlendi. İstediğiniz değeri manuel düzeltebilirsiniz.','ok');
+  renderTable(results);
+
+  // Sadece HYP yapıştırıldıysa → kayıtlı gereken, devir ve SİNA kaynaklı yapılan değerlerini geri yükle
+  if (hypText && !sinaText) {
+    try {
+      var raw=localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        var saved=JSON.parse(raw);
+        if (saved.rows) {
+          var tbody=document.getElementById('kriterBody');
+          KRITERLER.forEach(function(k){
+            var row=tbody.querySelector('tr[data-id="'+k.id+'"]');
+            if (!row||!saved.rows[k.id]) return;
+            var r=saved.rows[k.id];
+            // Gereken ve devir her zaman geri yükle
+            if (r.gereken) row.querySelector('[data-f=gereken]').value=r.gereken;
+            if (r.devir)   row.querySelector('[data-f=devir]').value=r.devir;
+            // SİNA kaynaklı yapılan değerlerini de geri yükle (mamografi, serviks, kolorektal)
+            if (k.yapSrc==='sina' && r.yapilan) row.querySelector('[data-f=yapilan]').value=r.yapilan;
+          });
+        }
+      }
+    } catch(e){}
+  }
+
+  recalculate();
+}
+
+/* ── RECALCULATE ── */
+function recalculate() {
+  var tbody=document.getElementById('kriterBody');
+  if (!tbody||!tbody.children.length) return;
+  var nufus=parseInt(document.getElementById('nufus').value)||0;
+  var tip=document.getElementById('nufusTip').value;
+  var maxN=tip==='dusuk'?2400:tip==='sifir'?0:4000;
+  var basari=1.0, hasData=false, devirMsgs=[];
+
+  KRITERLER.forEach(function(k) {
+    var row=tbody.querySelector('tr[data-id="'+k.id+'"]');
+    if (!row) return;
+    var gereken=parseFloat(row.querySelector('[data-f=gereken]').value)||0;
+    var yapilan=parseFloat(row.querySelector('[data-f=yapilan]').value);
+    var devir=parseFloat(row.querySelector('[data-f=devir]').value)||0;
+    var eff=calcEffective(gereken||null,isNaN(yapilan)?null:yapilan,devir);
+    var pct=eff.pct, bk=calcBK(pct,k);
+
+    var devirTd=row.querySelector('[data-f=devir]').closest('td');
+    var ot=devirTd.querySelector('.devir-tag'); if(ot) ot.remove();
+    if (eff.devirUsed&&devir>0) {
+      var tag=document.createElement('span'); tag.className='devir-tag'; tag.textContent='devir dahil';
+      devirTd.appendChild(tag);
+      devirMsgs.push('<strong>'+k.fullLbl+'</strong>: +'+devir+' → %'+pct);
+    }
+
+    var pC=pct===null?'pct-none':pct>=k.azami?'pct-grn':pct>=k.asgari?'pct-yel':'pct-red';
+    var bC=bk===null?'':bk<1.0?'bk-bad':bk>1.0?'bk-ok':'bk-mid';
+    row.cells[4].innerHTML='<span class="pct-badge '+pC+'">'+(pct!==null?pct+'%':'—')+'</span>';
+    row.cells[5].innerHTML=bk!==null?'<span class="bk-val '+bC+'">'+bk.toFixed(5)+'</span>':'<span style="color:#999">—</span>';
+
+    var gv=gereken||0, yv=isNaN(yapilan)?0:yapilan;
+    var s4070=TARAMA_IDS.indexOf(k.id)>=0;
+    row.cells[6].innerHTML=s4070?thrCell(gv,yv,devir,40):'';
+    row.cells[7].innerHTML=s4070?thrCell(gv,yv,devir,70):'';
+    row.cells[8].innerHTML=thrCell(gv,yv,devir,90);
+
+    if (bk!==null){basari*=bk;hasData=true;}
+  });
+
+  // KHT
+  var khtOn=document.getElementById('kht-toggle').checked;
+  var khtLbl=document.getElementById('kht-toggle-lbl');
+  khtLbl.textContent=khtOn?'Devir Dahil':'Devir Dahil Değil';
+  khtLbl.style.color=khtOn?'#2e7d32':'#c62828';
+  var khtY=0,khtG=0;
+  TARAMA_IDS.forEach(function(id){
+    var row=tbody.querySelector('tr[data-id="'+id+'"]'); if(!row) return;
+    var g=parseFloat(row.querySelector('[data-f=gereken]').value)||0;
+    var y=parseFloat(row.querySelector('[data-f=yapilan]').value)||0;
+    var d=parseFloat(row.querySelector('[data-f=devir]').value)||0;
+    khtG+=g; khtY+=Math.min(khtOn?(y+d):y,g);
+  });
+  var khtEl=document.getElementById('c-kht');
+  if (khtG>0){
+    var kp=+(khtY/khtG*100).toFixed(1);
+    var kc=kp<40?'#c62828':kp<70?'#e65100':kp<90?'#f9a825':'#2e7d32';
+    khtEl.innerHTML='<span style="color:'+kc+';">'+khtY+'/'+khtG+' %'+kp+'</span>';
+  } else {khtEl.textContent='—';}
+
+  // Süreç
+  var sv=document.getElementById('surec').value;
+  var sbk=calcSurecBK(sv);
+  var sEl=document.getElementById('surec-bk'), sDur=document.getElementById('surec-durum');
+  if(sEl){sEl.textContent=sbk!==null?sbk.toFixed(4):'—';sEl.className='bk-val '+(sbk===null?'':sbk>=1.03?'bk-ok':'bk-bad');}
+  if(sDur){sDur.innerHTML=sv==='basarili'?'<span style="color:#1b5e20;font-weight:600;">✓ Başarılı</span>':sv==='basarisiz'?'<span style="color:#b71c1c;font-weight:600;">✗ Başarısız</span>':'<span style="color:#999">—</span>';}
+  if(sbk!==null) basari*=sbk;
+
+  // Tavan
+  var tavan=1.0,tavanSub='';
+  if(tip==='sifir'){tavan=1.0;tavanSub='Sıfır birim → tavan = 1.0000';}
+  else if(nufus>0&&nufus<maxN){var tr2=+(maxN/nufus).toFixed(4);tavan=+Math.min(tr2,1.5).toFixed(4);tavanSub=maxN+'÷'+nufus+'='+tr2.toFixed(4)+(tr2>1.5?' → max 1.5':'');}
+  else if(nufus>=maxN){tavan=1.0;tavanSub='Nüfus ≥'+maxN+' → tavan=1.0000';}
+  else{tavanSub='Nüfus girilmedi';}
+
+  basari=+basari.toFixed(4);
+  var finalK=hasData?+Math.min(basari,tavan).toFixed(4):null;
+
+  document.getElementById('c-basari').textContent=hasData?basari.toFixed(5):'—';
+  document.getElementById('c-basari').style.color=hasData?(basari>=1.0?'#1565c0':'#c62828'):'#555';
+  document.getElementById('c-tavan').textContent=(tip==='sifir'||nufus>0)?tavan.toFixed(4):'—';
+  document.getElementById('c-tavan-sub').textContent=tavanSub;
+  document.getElementById('c-surec').textContent=sbk!==null?sbk.toFixed(4):'—';
+  document.getElementById('c-surec').style.color=sbk===null?'#555':sbk>=1.03?'#2e7d32':sbk<1.0?'#c62828':'#555';
+  if(finalK!==null){
+    document.getElementById('c-final').textContent=finalK.toFixed(4);
+    document.getElementById('c-final').style.color=finalK>=1.05?'#1565c0':finalK>=1.0?'#2e7d32':'#c62828';
+    document.getElementById('c-final-sub').textContent=basari>tavan?'Tavan '+tavan.toFixed(4)+' uygulandı':'';
+  } else{document.getElementById('c-final').textContent='—';}
+
+  var di=document.getElementById('devirInfo');
+  if(devirMsgs.length){di.style.display='block';di.innerHTML='📦 <strong>Devir Dahil:</strong> '+devirMsgs.join(' · ');}
+  else{di.style.display='none';}
+}
+
+/* ── KAYDET / YÜKLE ── */
+function saveData() {
+  var tbody=document.getElementById('kriterBody'), rows={};
+  KRITERLER.forEach(function(k){
+    var row=tbody.querySelector('tr[data-id="'+k.id+'"]'); if(!row) return;
+    rows[k.id]={gereken:row.querySelector('[data-f=gereken]').value||'',yapilan:row.querySelector('[data-f=yapilan]').value||'',devir:row.querySelector('[data-f=devir]').value||''};
+  });
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({rows:rows,nufus:document.getElementById('nufus').value,nufusTip:document.getElementById('nufusTip').value,surec:document.getElementById('surec').value}));
+    var ok=document.getElementById('saveOk'); ok.style.display='inline';
+    setTimeout(function(){ok.style.display='none';},2000);
+  }catch(e){alert('Kayıt başarısız: '+e.message);}
+}
+
+function loadSaved() {
+  try{
+    var raw=localStorage.getItem(SAVE_KEY); if(!raw) return;
+    var data=JSON.parse(raw);
+    if(data.nufus) document.getElementById('nufus').value=data.nufus;
+    if(data.nufusTip) document.getElementById('nufusTip').value=data.nufusTip;
+    if(data.surec) document.getElementById('surec').value=data.surec;
+    if(data.rows&&Object.keys(data.rows).length){
+      renderTable({});
+      KRITERLER.forEach(function(k){
+        var row=document.getElementById('kriterBody').querySelector('tr[data-id="'+k.id+'"]');
+        if(!row||!data.rows[k.id]) return;
+        var r=data.rows[k.id];
+        if(r.gereken) row.querySelector('[data-f=gereken]').value=r.gereken;
+        if(r.yapilan) row.querySelector('[data-f=yapilan]').value=r.yapilan;
+        if(r.devir)   row.querySelector('[data-f=devir]').value=r.devir;
+      });
+      recalculate();
+    }
+  }catch(e){}
+}
+
+function resetAll() {
+  document.getElementById('resultsWrap').style.display='none';
+  document.getElementById('hyp-text').value='';
+  document.getElementById('sina-text').value='';
+  document.getElementById('hyp-info').textContent='';
+  document.getElementById('sina-info').textContent='';
+  document.getElementById('kriterBody').innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-txt">Veri yapıştırıp Hesapla\'ya basın</div></div></td></tr>';
+  setStatus('Verileri yapıştırın, ardından "Hesapla" butonuna basın.','');
+}
+
+function setStatus(msg,type){
+  var el=document.getElementById('status');
+  el.textContent=msg; el.className='status-bar'+(type?' '+type:'');
+}
+
+document.getElementById('btn-analyze').addEventListener('click', analyze);
+document.getElementById('btn-recalc').addEventListener('click', recalculate);
+document.getElementById('btn-reset').addEventListener('click', resetAll);
+document.getElementById('btn-save').addEventListener('click', saveData);
+document.getElementById('nufus').addEventListener('input', recalculate);
+document.getElementById('nufusTip').addEventListener('change', recalculate);
+document.getElementById('surec').addEventListener('change', recalculate);
+document.getElementById('kht-toggle').addEventListener('change', recalculate);
+
+loadSaved();
+</script>
+</body>
+</html>
